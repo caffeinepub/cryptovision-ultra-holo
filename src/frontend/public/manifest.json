@@ -1,0 +1,23 @@
+{
+  "name": "CryptoVision Ultra Holo",
+  "short_name": "CryptoVision",
+  "description": "Next-gen virtual crypto trading app",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09070f",
+  "theme_color": "#0ef0d0",
+  "icons": [
+    {
+      "src": "/assets/generated/app-logo-transparent.dim_200x200.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/app-logo-transparent.dim_200x200.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
