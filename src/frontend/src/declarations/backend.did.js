@@ -60,6 +60,7 @@ export const idlService = IDL.Service({
   'getMarketMode' : IDL.Func([], [MarketMode], ['query']),
   'getOrCreateUserData' : IDL.Func([], [UserDataView], []),
   'getTutorLessons' : IDL.Func([], [IDL.Vec(TutorLesson)], ['query']),
+  'resetAccount' : IDL.Func([], [UserDataView], []),
   'sell' : IDL.Func([IDL.Text, IDL.Float64], [], []),
   'setMarketMode' : IDL.Func([MarketMode], [], []),
 });
@@ -116,6 +117,7 @@ export const idlFactory = ({ IDL }) => {
     'getMarketMode' : IDL.Func([], [MarketMode], ['query']),
     'getOrCreateUserData' : IDL.Func([], [UserDataView], []),
     'getTutorLessons' : IDL.Func([], [IDL.Vec(TutorLesson)], ['query']),
+    'resetAccount' : IDL.Func([], [UserDataView], []),
     'sell' : IDL.Func([IDL.Text, IDL.Float64], [], []),
     'setMarketMode' : IDL.Func([MarketMode], [], []),
   });

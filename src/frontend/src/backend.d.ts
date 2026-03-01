@@ -58,6 +58,7 @@ export interface backendInterface {
     getMarketMode(): Promise<MarketMode>;
     getOrCreateUserData(): Promise<UserDataView>;
     getTutorLessons(): Promise<Array<TutorLesson>>;
+    resetAccount(): Promise<UserDataView>;
     sell(coin: string, quantity: number): Promise<void>;
     setMarketMode(mode: MarketMode): Promise<void>;
 }

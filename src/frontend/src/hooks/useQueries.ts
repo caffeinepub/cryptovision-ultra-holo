@@ -133,3 +133,20 @@ export function useSetMarketMode() {
     },
   });
 }
+
+export function useResetAccount() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const { saveToCache } = useOfflineCache();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("No actor");
+      return actor.resetAccount();
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["userData"], data);
+      saveToCache(data);
+      queryClient.invalidateQueries({ queryKey: ["userData"] });
+    },
+  });
+}

@@ -51,6 +51,7 @@ export interface _SERVICE {
   'getMarketMode' : ActorMethod<[], MarketMode>,
   'getOrCreateUserData' : ActorMethod<[], UserDataView>,
   'getTutorLessons' : ActorMethod<[], Array<TutorLesson>>,
+  'resetAccount' : ActorMethod<[], UserDataView>,
   'sell' : ActorMethod<[string, number], undefined>,
   'setMarketMode' : ActorMethod<[MarketMode], undefined>,
 }

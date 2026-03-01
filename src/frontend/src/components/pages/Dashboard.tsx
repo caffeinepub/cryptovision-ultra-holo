@@ -1,18 +1,30 @@
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Activity,
   ArrowRight,
+  Loader2,
+  RefreshCw,
   TrendingDown,
   TrendingUp,
   Wallet,
   Zap,
 } from "lucide-react";
 import { type Variants, motion } from "motion/react";
+import { Suspense, lazy, useState } from "react";
+import { toast } from "sonner";
 import type { UserDataView } from "../../backend.d";
 import { useMarketContext } from "../../contexts/MarketContext";
 import type { CoinPrice } from "../../hooks/usePrices";
+import { useResetAccount } from "../../hooks/useQueries";
 import type { Page } from "../../types/navigation";
 import CoinIcon from "../CoinIcon";
+import RiskScoreWidget from "../RiskScoreWidget";
+import TiltCard from "../TiltCard";
+
+// Lazy load 3D components so they don't block initial render
+const CryptoBackground3D = lazy(() => import("../CryptoBackground3D"));
+const RotatingCoin3D = lazy(() => import("../RotatingCoin3D"));
 
 interface DashboardProps {
   prices: Record<string, CoinPrice>;
@@ -117,6 +129,73 @@ function CoinRow({ coin }: { coin: CoinPrice }) {
   );
 }
 
+function BrokeBanner({ userData }: { userData?: UserDataView }) {
+  const resetMutation = useResetAccount();
+  const [confirmed, setConfirmed] = useState(false);
+
+  const balance = userData?.balance ?? 10000;
+  const hasHoldings =
+    Array.isArray(userData?.portfolio) && userData.portfolio.length > 0;
+  const isBroke = balance < 1 && !hasHoldings;
+
+  if (!isBroke) return null;
+
+  const handleReset = async () => {
+    if (!confirmed) {
+      setConfirmed(true);
+      return;
+    }
+    try {
+      await resetMutation.mutateAsync();
+      toast.success("Account restarted! You have $10,000 to trade again.");
+      setConfirmed(false);
+    } catch {
+      toast.error("Failed to restart. Please try again.");
+      setConfirmed(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="glass-card border-destructive/40 bg-destructive/10 p-5 rounded-xl flex flex-col sm:flex-row items-center gap-4"
+    >
+      <div className="text-3xl">💸</div>
+      <div className="flex-1 text-center sm:text-left">
+        <p className="font-display font-bold text-destructive text-lg">
+          You ran out of money!
+        </p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Your balance is empty and you have no holdings. Restart your account
+          to get a fresh $10,000 and try again.
+        </p>
+      </div>
+      <Button
+        onClick={handleReset}
+        disabled={resetMutation.isPending}
+        className={cn(
+          "font-bold shrink-0 transition-all",
+          confirmed
+            ? "bg-destructive/80 hover:bg-destructive text-white border border-destructive"
+            : "bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 hover:shadow-neon-cyan",
+        )}
+      >
+        {resetMutation.isPending ? (
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        ) : (
+          <RefreshCw className="w-4 h-4 mr-2" />
+        )}
+        {resetMutation.isPending
+          ? "Restarting..."
+          : confirmed
+            ? "Confirm Restart"
+            : "Restart Account"}
+      </Button>
+    </motion.div>
+  );
+}
+
 export default function Dashboard({
   prices,
   priceList,
@@ -149,20 +228,36 @@ export default function Dashboard({
   const totalMarketCap = priceList.reduce((s, c) => s + c.marketCap, 0);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Page Header */}
+    <div className="max-w-7xl mx-auto space-y-6 relative">
+      {/* 3D Background Scene */}
+      <Suspense fallback={null}>
+        <CryptoBackground3D />
+      </Suspense>
+
+      {/* Page Header with 3D coin */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
+        className="flex items-center justify-between gap-4"
       >
-        <h1 className="font-display text-2xl lg:text-3xl font-bold gradient-text-holo">
-          Mission Control
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Real-time holographic market overview
-        </p>
+        <div>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold gradient-text-holo">
+            Mission Control
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Real-time holographic market overview
+          </p>
+        </div>
+        <div className="hidden sm:block">
+          <Suspense fallback={<div className="w-[150px] h-[150px]" />}>
+            <RotatingCoin3D size={150} />
+          </Suspense>
+        </div>
       </motion.div>
+
+      {/* Broke banner */}
+      <BrokeBanner userData={userData} />
 
       {/* Stats Row */}
       <motion.div
@@ -173,97 +268,114 @@ export default function Dashboard({
       >
         {/* Portfolio Value */}
         <motion.div variants={item} className="col-span-2 lg:col-span-1">
-          <div className="glass-card neon-border-cyan p-4 h-full scanline relative overflow-hidden">
-            <div className="flex items-start justify-between mb-3">
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                Portfolio Value
+          <TiltCard>
+            <div className="glass-liquid glass-refract neon-border-cyan p-4 h-full scanline relative overflow-hidden">
+              <div className="flex items-start justify-between mb-3">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Portfolio Value
+                </div>
+                <Wallet className="w-4 h-4 text-primary opacity-70" />
               </div>
-              <Wallet className="w-4 h-4 text-primary opacity-70" />
+              <div className="font-display font-bold text-2xl neon-cyan">
+                {formatUSD(portfolioValue)}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Cash: {formatUSD(userData?.balance ?? 10000)}
+              </div>
             </div>
-            <div className="font-display font-bold text-2xl neon-cyan">
-              {formatUSD(portfolioValue)}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Cash: {formatUSD(userData?.balance ?? 10000)}
-            </div>
-          </div>
+          </TiltCard>
         </motion.div>
 
         {/* Market Cap */}
         <motion.div variants={item}>
-          <div className="glass-card-purple p-4 h-full">
-            <div className="flex items-start justify-between mb-3">
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                Total Mkt Cap
+          <TiltCard>
+            <div
+              className="glass-liquid glass-refract p-4 h-full"
+              style={{ border: "1px solid oklch(0.65 0.25 285 / 0.3)" }}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Total Mkt Cap
+                </div>
+                <Activity className="w-4 h-4 text-secondary opacity-70" />
               </div>
-              <Activity className="w-4 h-4 text-secondary opacity-70" />
+              <div className="font-display font-bold text-xl neon-purple">
+                {formatCompact(totalMarketCap)}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                8 tracked coins
+              </div>
             </div>
-            <div className="font-display font-bold text-xl neon-purple">
-              {formatCompact(totalMarketCap)}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              8 tracked coins
-            </div>
-          </div>
+          </TiltCard>
         </motion.div>
 
         {/* BTC Price */}
         <motion.div variants={item}>
-          <div className="glass-card-green p-4 h-full">
-            <div className="flex items-start justify-between mb-3">
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                Bitcoin
-              </div>
-              <span className="text-sm font-bold" style={{ color: "#F7931A" }}>
-                ₿
-              </span>
-            </div>
-            <div className="font-display font-bold text-xl neon-green">
-              {formatUSD(prices.BTC?.price ?? 0)}
-            </div>
+          <TiltCard>
             <div
-              className={cn(
-                "text-xs font-mono mt-1",
-                (prices.BTC?.changePercent24h ?? 0) >= 0
-                  ? "price-up"
-                  : "price-down",
-              )}
+              className="glass-liquid glass-refract p-4 h-full"
+              style={{ border: "1px solid oklch(0.82 0.2 150 / 0.3)" }}
             >
-              {(prices.BTC?.changePercent24h ?? 0) >= 0 ? "+" : ""}
-              {(prices.BTC?.changePercent24h ?? 0).toFixed(2)}%
+              <div className="flex items-start justify-between mb-3">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Bitcoin
+                </div>
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: "#F7931A" }}
+                >
+                  ₿
+                </span>
+              </div>
+              <div className="font-display font-bold text-xl neon-green">
+                {formatUSD(prices.BTC?.price ?? 0)}
+              </div>
+              <div
+                className={cn(
+                  "text-xs font-mono mt-1",
+                  (prices.BTC?.changePercent24h ?? 0) >= 0
+                    ? "price-up"
+                    : "price-down",
+                )}
+              >
+                {(prices.BTC?.changePercent24h ?? 0) >= 0 ? "+" : ""}
+                {(prices.BTC?.changePercent24h ?? 0).toFixed(2)}%
+              </div>
             </div>
-          </div>
+          </TiltCard>
         </motion.div>
 
         {/* Market Mode */}
         <motion.div variants={item}>
-          <div className="glass-card p-4 h-full">
-            <div className="flex items-start justify-between mb-3">
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                Market Mode
+          <TiltCard>
+            <div className="glass-liquid glass-refract p-4 h-full">
+              <div className="flex items-start justify-between mb-3">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Market Mode
+                </div>
+                <Zap className="w-4 h-4 text-accent opacity-70" />
               </div>
-              <Zap className="w-4 h-4 text-accent opacity-70" />
+              <div
+                className={cn(
+                  "font-display font-bold text-xl uppercase tracking-wide",
+                  marketMode === "bull" && "neon-green",
+                  marketMode === "bear" && "neon-pink",
+                  marketMode === "normal" && "neon-cyan",
+                )}
+              >
+                {marketMode === "bull" && "🚀 Bull"}
+                {marketMode === "bear" && "🐻 Bear"}
+                {marketMode === "normal" && "⚡ Normal"}
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate("settings")}
+                className="text-xs text-muted-foreground mt-1 hover:text-primary transition-colors flex items-center gap-1"
+              >
+                Change mode <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
-            <div
-              className={cn(
-                "font-display font-bold text-xl uppercase tracking-wide",
-                marketMode === "bull" && "neon-green",
-                marketMode === "bear" && "neon-pink",
-                marketMode === "normal" && "neon-cyan",
-              )}
-            >
-              {marketMode === "bull" && "🚀 Bull"}
-              {marketMode === "bear" && "🐻 Bear"}
-              {marketMode === "normal" && "⚡ Normal"}
-            </div>
-            <button
-              type="button"
-              onClick={() => onNavigate("settings")}
-              className="text-xs text-muted-foreground mt-1 hover:text-primary transition-colors flex items-center gap-1"
-            >
-              Change mode <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
+          </TiltCard>
         </motion.div>
       </motion.div>
 
@@ -276,7 +388,7 @@ export default function Dashboard({
           animate="show"
           className="lg:col-span-2"
         >
-          <div className="glass-card p-4">
+          <div className="glass-liquid glass-refract p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display font-bold text-base neon-cyan">
                 Live Prices
@@ -299,9 +411,21 @@ export default function Dashboard({
 
         {/* Right Column */}
         <div className="space-y-4">
+          {/* Risk Score Widget */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <RiskScoreWidget userData={userData} prices={prices} />
+          </motion.div>
+
           {/* Top Movers */}
           <motion.div variants={container} initial="hidden" animate="show">
-            <div className="glass-card-purple p-4">
+            <div
+              className="glass-liquid glass-refract p-4"
+              style={{ border: "1px solid oklch(0.65 0.25 285 / 0.3)" }}
+            >
               <h2 className="font-display font-bold text-base neon-purple mb-3">
                 🔥 Top Movers
               </h2>
@@ -345,7 +469,10 @@ export default function Dashboard({
 
           {/* Trending by Volume */}
           <motion.div variants={container} initial="hidden" animate="show">
-            <div className="glass-card-green p-4">
+            <div
+              className="glass-liquid glass-refract p-4"
+              style={{ border: "1px solid oklch(0.82 0.2 150 / 0.3)" }}
+            >
               <h2 className="font-display font-bold text-base neon-green mb-3">
                 📊 Volume Leaders
               </h2>
@@ -376,7 +503,7 @@ export default function Dashboard({
 
           {/* Quick Actions */}
           <motion.div variants={item} initial="hidden" animate="show">
-            <div className="glass-card p-4">
+            <div className="glass-liquid glass-refract p-4">
               <h2 className="font-display font-bold text-base text-foreground mb-3">
                 Quick Actions
               </h2>
@@ -386,25 +513,21 @@ export default function Dashboard({
                     label: "Buy Crypto",
                     page: "trade" as const,
                     icon: TrendingUp,
-                    color: "neon-cyan",
                   },
                   {
-                    label: "My Portfolio",
-                    page: "portfolio" as const,
+                    label: "My Wallet",
+                    page: "wallet" as const,
                     icon: Wallet,
-                    color: "neon-purple",
                   },
                   {
                     label: "Set Alert",
                     page: "alerts" as const,
                     icon: Activity,
-                    color: "neon-green",
                   },
                   {
                     label: "Learn",
                     page: "academy" as const,
                     icon: Zap,
-                    color: "neon-pink",
                   },
                 ].map((action) => {
                   const Icon = action.icon;

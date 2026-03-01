@@ -1,12 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
-  Bot,
   CheckCircle2,
   ChevronRight,
   Cpu,
   GraduationCap,
   Sparkles,
+  Wifi,
+  WifiOff,
   X,
   Zap,
 } from "lucide-react";
@@ -16,6 +17,10 @@ import { toast } from "sonner";
 import type { TutorLesson } from "../../backend.d";
 import { useTutorLessons } from "../../hooks/useQueries";
 import type { Page, PageProps } from "../../types/navigation";
+import TiltCard from "../TiltCard";
+
+// Offline cache key
+const NOVA_CACHE_KEY = "nova_lessons_cache";
 
 // Fallback lessons shown when backend isn't connected yet
 const FALLBACK_LESSONS: TutorLesson[] = [
@@ -168,21 +173,40 @@ const CATEGORY_COLORS: Record<string, string> = {
   DeFi: "oklch(0.72 0.22 330)",
 };
 
-function RobotAvatar({ typing }: { typing: boolean }) {
+// Cache helpers
+function saveLessonsToCache(lessons: TutorLesson[]) {
+  try {
+    localStorage.setItem(NOVA_CACHE_KEY, JSON.stringify(lessons));
+  } catch {
+    // ignore
+  }
+}
+
+function loadLessonsFromCache(): TutorLesson[] | null {
+  try {
+    const raw = localStorage.getItem(NOVA_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as TutorLesson[];
+  } catch {
+    return null;
+  }
+}
+
+function NovaRobotDisplay({ typing }: { typing: boolean }) {
   return (
     <div className="relative flex items-center justify-center">
       {/* Outer pulse rings */}
       <motion.div
         className="absolute rounded-full"
         style={{
-          width: 120,
-          height: 120,
+          width: 220,
+          height: 220,
           background: "transparent",
-          border: "1px solid oklch(0.85 0.18 195 / 0.3)",
+          border: "1px solid oklch(0.85 0.18 195 / 0.2)",
         }}
-        animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.6, 0.3] }}
+        animate={{ scale: [1, 1.08, 1], opacity: [0.2, 0.5, 0.2] }}
         transition={{
-          duration: 2.5,
+          duration: 3,
           repeat: Number.POSITIVE_INFINITY,
           ease: "easeInOut",
         }}
@@ -190,56 +214,58 @@ function RobotAvatar({ typing }: { typing: boolean }) {
       <motion.div
         className="absolute rounded-full"
         style={{
-          width: 90,
-          height: 90,
+          width: 180,
+          height: 180,
           background: "transparent",
-          border: "1px solid oklch(0.85 0.18 195 / 0.2)",
+          border: "1px solid oklch(0.85 0.18 195 / 0.15)",
         }}
-        animate={{ scale: [1, 1.12, 1], opacity: [0.2, 0.5, 0.2] }}
+        animate={{ scale: [1, 1.1, 1], opacity: [0.15, 0.4, 0.15] }}
         transition={{
-          duration: 2.5,
+          duration: 3,
           repeat: Number.POSITIVE_INFINITY,
           ease: "easeInOut",
-          delay: 0.3,
+          delay: 0.5,
         }}
       />
 
-      {/* Robot icon with glow */}
+      {/* NOVA Robot Image */}
       <motion.div
-        className="relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center glass-card"
-        style={{
-          background: "oklch(0.15 0.04 195 / 0.8)",
-          border: "1.5px solid oklch(0.85 0.18 195 / 0.6)",
-          boxShadow:
-            "0 0 30px oklch(0.85 0.18 195 / 0.4), 0 0 60px oklch(0.85 0.18 195 / 0.2)",
-        }}
+        className="relative z-10"
         animate={
           typing
             ? {
-                boxShadow: [
-                  "0 0 30px oklch(0.85 0.18 195 / 0.4)",
-                  "0 0 50px oklch(0.85 0.18 195 / 0.7)",
-                  "0 0 30px oklch(0.85 0.18 195 / 0.4)",
+                filter: [
+                  "drop-shadow(0 0 15px oklch(0.85 0.18 195 / 0.5))",
+                  "drop-shadow(0 0 30px oklch(0.85 0.18 195 / 0.8))",
+                  "drop-shadow(0 0 15px oklch(0.85 0.18 195 / 0.5))",
                 ],
               }
             : {
-                boxShadow: "0 0 30px oklch(0.85 0.18 195 / 0.4)",
+                filter: "drop-shadow(0 0 20px oklch(0.85 0.18 195 / 0.5))",
               }
         }
         transition={{
-          duration: 0.6,
+          duration: 0.8,
           repeat: typing ? Number.POSITIVE_INFINITY : 0,
         }}
       >
-        <Bot className="w-10 h-10" style={{ color: "oklch(0.85 0.18 195)" }} />
-        {/* Typing indicator dots */}
+        <img
+          src="/assets/generated/nova-robot.dim_400x500.png"
+          alt="NOVA AI Robot"
+          className="w-48 h-48 object-contain object-top"
+          style={{
+            borderRadius: "50%",
+            background: "oklch(0.1 0.03 265 / 0.5)",
+          }}
+        />
+        {/* Typing indicator */}
         <AnimatePresence>
           {typing && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="absolute -bottom-2 -right-2 flex gap-0.5 glass-card px-1.5 py-0.5 rounded-full"
+              className="absolute -bottom-1 -right-1 flex gap-0.5 glass-card px-2 py-1 rounded-full"
               style={{ border: "1px solid oklch(0.85 0.18 195 / 0.4)" }}
             >
               {([0, 0.15, 0.3] as const).map((delay) => (
@@ -271,18 +297,17 @@ function RobotAvatar({ typing }: { typing: boolean }) {
             boxShadow: "0 0 6px oklch(0.85 0.18 195)",
           }}
           animate={{
-            rotate: [deg, deg + 360],
             x: [
-              Math.cos((deg * Math.PI) / 180) * 48,
-              Math.cos(((deg + 360) * Math.PI) / 180) * 48,
+              Math.cos((deg * Math.PI) / 180) * 90,
+              Math.cos(((deg + 360) * Math.PI) / 180) * 90,
             ],
             y: [
-              Math.sin((deg * Math.PI) / 180) * 48,
-              Math.sin(((deg + 360) * Math.PI) / 180) * 48,
+              Math.sin((deg * Math.PI) / 180) * 90,
+              Math.sin(((deg + 360) * Math.PI) / 180) * 90,
             ],
           }}
           transition={{
-            duration: 4 + deg / 120,
+            duration: 5 + deg / 120,
             repeat: Number.POSITIVE_INFINITY,
             ease: "linear",
           }}
@@ -338,60 +363,95 @@ function TypewriterText({
 interface LessonCardProps {
   lesson: TutorLesson;
   isActive: boolean;
+  isLearned: boolean;
   onClick: () => void;
 }
 
-function LessonCard({ lesson, isActive, onClick }: LessonCardProps) {
+function LessonCard({ lesson, isActive, isLearned, onClick }: LessonCardProps) {
   const color = CATEGORY_COLORS[lesson.category] ?? "oklch(0.85 0.18 195)";
   return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "w-full text-left glass-card p-4 transition-all duration-200 group",
-        isActive ? "neon-border-cyan" : "hover:border-primary/30",
-      )}
-      whileHover={{ scale: 1.01, y: -2 }}
-      whileTap={{ scale: 0.99 }}
-      style={
-        isActive
-          ? { boxShadow: "0 0 20px oklch(0.85 0.18 195 / 0.2)" }
-          : undefined
-      }
-    >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <span
-          className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
-          style={{
-            color,
-            background: color.replace(")", " / 0.12)"),
-            border: `1px solid ${color.replace(")", " / 0.3)")}`,
-          }}
-        >
-          {lesson.category}
-        </span>
-        <ChevronRight
-          className={cn(
-            "w-4 h-4 mt-0.5 transition-all flex-shrink-0",
-            isActive ? "text-primary rotate-90" : "text-muted-foreground",
-          )}
-        />
-      </div>
-      <p className="text-sm font-medium text-foreground leading-snug">
-        {lesson.question}
-      </p>
-    </motion.button>
+    <TiltCard maxTilt={4}>
+      <motion.button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "w-full text-left glass-liquid glass-refract p-4 transition-all duration-200 group relative",
+          isActive ? "neon-border-cyan" : "hover:border-primary/30",
+        )}
+        whileTap={{ scale: 0.99 }}
+        style={
+          isActive
+            ? { boxShadow: "0 0 20px oklch(0.85 0.18 195 / 0.2)" }
+            : undefined
+        }
+      >
+        {isLearned && (
+          <div
+            className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+            style={{
+              background: "oklch(0.82 0.2 150 / 0.2)",
+              border: "1px solid oklch(0.82 0.2 150 / 0.5)",
+            }}
+          >
+            <CheckCircle2
+              className="w-3 h-3"
+              style={{ color: "oklch(0.82 0.2 150)" }}
+            />
+          </div>
+        )}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <span
+            className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
+            style={{
+              color,
+              background: color.replace(")", " / 0.12)"),
+              border: `1px solid ${color.replace(")", " / 0.3)")}`,
+            }}
+          >
+            {lesson.category}
+          </span>
+          <ChevronRight
+            className={cn(
+              "w-4 h-4 mt-0.5 transition-all flex-shrink-0",
+              isActive ? "text-primary rotate-90" : "text-muted-foreground",
+            )}
+          />
+        </div>
+        <p className="text-sm font-medium text-foreground leading-snug pr-5">
+          {lesson.question}
+        </p>
+      </motion.button>
+    </TiltCard>
   );
 }
 
-// ---------- Prop types ----------
 interface AiTutorPageProps extends PageProps {
   onNavigate: (page: Page) => void;
 }
 
 export default function AiTutor({ userData }: AiTutorPageProps) {
-  const { data: lessons = [] } = useTutorLessons();
-  const displayLessons = lessons.length > 0 ? lessons : FALLBACK_LESSONS;
+  const { data: backendLessons = [] } = useTutorLessons();
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Save to cache whenever we get live data
+  useEffect(() => {
+    if (backendLessons.length > 0) {
+      saveLessonsToCache(backendLessons);
+      setIsOffline(false);
+    }
+  }, [backendLessons]);
+
+  // Determine which lessons to use: backend > cache > fallback
+  const displayLessons = (() => {
+    if (backendLessons.length > 0) return backendLessons;
+    const cached = loadLessonsFromCache();
+    if (cached && cached.length > 0) {
+      if (!isOffline) setIsOffline(true);
+      return cached;
+    }
+    setIsOffline(true);
+    return FALLBACK_LESSONS;
+  })();
 
   const [activeCategory, setActiveCategory] = useState("All");
   const [selectedLesson, setSelectedLesson] = useState<TutorLesson | null>(
@@ -405,7 +465,6 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
   const tradeCount = userData?.tradeHistory?.length ?? 0;
   const prevTradeCountRef = useRef(tradeCount);
 
-  // Detect new trade and show robot tip
   useEffect(() => {
     if (tradeCount > prevTradeCountRef.current) {
       prevTradeCountRef.current = tradeCount;
@@ -428,13 +487,11 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
     setSelectedLesson(lesson);
     setIsTyping(true);
 
-    // Simulate robot "thinking" for 1s before showing typewriter
     setTimeout(() => {
       setIsTyping(false);
       setShowAnswer(true);
     }, 1000);
 
-    // Award XP if not already learned
     if (!learnedIds.has(lesson.id)) {
       setLearnedIds((prev) => new Set([...prev, lesson.id]));
       setXpEarned((prev) => prev + 5);
@@ -461,23 +518,49 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
         className="flex items-start justify-between gap-4 flex-wrap"
       >
         <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-bold gradient-text-holo">
-            AI Tutor
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-2xl lg:text-3xl font-bold gradient-text-holo">
+              AI Tutor
+            </h1>
+            {isOffline && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1.5 glass-card px-2.5 py-1 rounded-full"
+                style={{ border: "1px solid oklch(0.78 0.2 55 / 0.4)" }}
+              >
+                <WifiOff
+                  className="w-3 h-3"
+                  style={{ color: "oklch(0.78 0.2 55)" }}
+                />
+                <span
+                  className="text-[10px] font-mono font-bold"
+                  style={{ color: "oklch(0.78 0.2 55)" }}
+                >
+                  OFFLINE MODE
+                </span>
+              </motion.div>
+            )}
+            {!isOffline && (
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground">
+                <Wifi className="w-3 h-3 text-accent" />
+                LIVE
+              </div>
+            )}
+          </div>
           <p className="text-muted-foreground text-sm mt-1">
-            Learn crypto with your AI robot tutor — interactive lessons, tips,
-            and real-time guidance.
+            Learn crypto with NOVA — your AI robot tutor
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="glass-card px-4 py-2 flex items-center gap-2">
+          <div className="glass-liquid px-4 py-2 flex items-center gap-2">
             <Zap className="w-4 h-4 text-primary" />
             <span className="font-mono font-bold text-sm neon-cyan">
               +{xpEarned} XP
             </span>
             <span className="text-xs text-muted-foreground">this session</span>
           </div>
-          <div className="glass-card px-4 py-2 flex items-center gap-2">
+          <div className="glass-liquid px-4 py-2 flex items-center gap-2">
             <GraduationCap className="w-4 h-4 text-accent" />
             <span className="font-mono text-sm font-bold neon-green">
               {learnedCount}/{totalLessons}
@@ -491,7 +574,7 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
       <motion.div
         initial={{ opacity: 0, scaleX: 0 }}
         animate={{ opacity: 1, scaleX: 1 }}
-        className="glass-card p-3"
+        className="glass-liquid p-3"
         style={{ transformOrigin: "left" }}
       >
         <div className="flex items-center justify-between mb-2">
@@ -517,16 +600,16 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
       </motion.div>
 
       <div className="grid lg:grid-cols-5 gap-6">
-        {/* Left column — robot + answer */}
+        {/* Left column — NOVA robot + answer */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Robot avatar */}
+          {/* NOVA Robot panel */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="glass-card p-6 flex flex-col items-center gap-4"
+            className="glass-liquid glass-refract p-6 flex flex-col items-center gap-4"
           >
-            <RobotAvatar typing={isTyping} />
+            <NovaRobotDisplay typing={isTyping} />
             <div className="text-center">
               <div className="font-display font-bold text-sm neon-cyan mb-0.5">
                 NOVA — AI Tutor
@@ -582,7 +665,7 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="glass-card p-5 space-y-4"
+                className="glass-liquid glass-refract p-5 space-y-4"
                 style={{ border: "1px solid oklch(0.85 0.18 195 / 0.3)" }}
               >
                 {/* Question */}
@@ -607,15 +690,15 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
                 {/* Typing / Answer */}
                 <div className="flex items-start gap-2">
                   <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 flex-none"
+                    className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 flex-none overflow-hidden"
                     style={{
-                      background: "oklch(0.85 0.18 195 / 0.15)",
                       border: "1px solid oklch(0.85 0.18 195 / 0.4)",
                     }}
                   >
-                    <Bot
-                      className="w-3.5 h-3.5"
-                      style={{ color: "oklch(0.85 0.18 195)" }}
+                    <img
+                      src="/assets/generated/nova-robot.dim_400x500.png"
+                      alt="NOVA"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1">
@@ -713,12 +796,8 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="glass-card p-6 text-center space-y-2"
+              className="glass-liquid glass-refract p-6 text-center space-y-2"
             >
-              <Bot
-                className="w-10 h-10 mx-auto opacity-30"
-                style={{ color: "oklch(0.85 0.18 195)" }}
-              />
               <p className="text-sm text-muted-foreground">
                 🤖 Pick a lesson on the right and I'll explain it step-by-step!
               </p>
@@ -767,27 +846,12 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
                   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
                 }}
               >
-                <div className="relative">
-                  {learnedIds.has(lesson.id) && (
-                    <div
-                      className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{
-                        background: "oklch(0.82 0.2 150 / 0.2)",
-                        border: "1px solid oklch(0.82 0.2 150 / 0.5)",
-                      }}
-                    >
-                      <CheckCircle2
-                        className="w-3 h-3"
-                        style={{ color: "oklch(0.82 0.2 150)" }}
-                      />
-                    </div>
-                  )}
-                  <LessonCard
-                    lesson={lesson}
-                    isActive={selectedLesson?.id === lesson.id}
-                    onClick={() => handleSelectLesson(lesson)}
-                  />
-                </div>
+                <LessonCard
+                  lesson={lesson}
+                  isActive={selectedLesson?.id === lesson.id}
+                  isLearned={learnedIds.has(lesson.id)}
+                  onClick={() => handleSelectLesson(lesson)}
+                />
               </motion.div>
             ))}
           </motion.div>
@@ -796,11 +860,12 @@ export default function AiTutor({ userData }: AiTutorPageProps) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="glass-card p-10 text-center space-y-3"
+              className="glass-liquid glass-refract p-10 text-center space-y-3"
             >
-              <Bot
-                className="w-12 h-12 mx-auto opacity-20"
-                style={{ color: "oklch(0.85 0.18 195)" }}
+              <img
+                src="/assets/generated/nova-robot.dim_400x500.png"
+                alt="NOVA"
+                className="w-16 h-16 object-contain object-top mx-auto opacity-30"
               />
               <p className="text-muted-foreground">
                 No lessons in this category yet.

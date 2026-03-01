@@ -140,6 +140,7 @@ export interface backendInterface {
     getMarketMode(): Promise<MarketMode>;
     getOrCreateUserData(): Promise<UserDataView>;
     getTutorLessons(): Promise<Array<TutorLesson>>;
+    resetAccount(): Promise<UserDataView>;
     sell(coin: string, quantity: number): Promise<void>;
     setMarketMode(mode: MarketMode): Promise<void>;
 }
@@ -228,6 +229,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getTutorLessons();
             return result;
+        }
+    }
+    async resetAccount(): Promise<UserDataView> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.resetAccount();
+                return from_candid_UserDataView_n3(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.resetAccount();
+            return from_candid_UserDataView_n3(this._uploadFile, this._downloadFile, result);
         }
     }
     async sell(arg0: string, arg1: number): Promise<void> {

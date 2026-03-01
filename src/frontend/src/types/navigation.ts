@@ -7,7 +7,10 @@ export type Page =
   | "gamification"
   | "academy"
   | "aiTutor"
-  | "settings";
+  | "settings"
+  | "wallet"
+  | "news"
+  | "coinCompare";
 
 export interface PageProps {
   prices: Record<string, import("../hooks/usePrices").CoinPrice>;

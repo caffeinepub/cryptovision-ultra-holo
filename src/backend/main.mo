@@ -6,11 +6,11 @@ import Time "mo:core/Time";
 import Order "mo:core/Order";
 import List "mo:core/List";
 import Float "mo:core/Float";
-import Migration "migration";
+
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 
-(with migration = Migration.run)
+
 actor {
   module Coin {
     public func compare(a : Coin, b : Coin) : Order.Order {
@@ -456,6 +456,18 @@ actor {
         };
       };
     };
+  };
+
+  public shared ({ caller }) func resetAccount() : async UserDataView {
+    let newUser : UserData = {
+      portfolio = Map.empty<Text, Float>();
+      balance = 10000.0;
+      tradeHistory = List.empty<Trade>();
+      xp = 0;
+      badges = List.empty<Badge>();
+    };
+    users.add(caller, newUser);
+    toUserDataView(newUser);
   };
 
   func updateBadges(userData : UserData, isBuy : Bool) : Badges {

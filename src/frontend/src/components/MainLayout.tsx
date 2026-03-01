@@ -4,8 +4,11 @@ import {
   Bell,
   BookOpen,
   Bot,
+  GitCompare,
   LayoutDashboard,
   Menu,
+  Newspaper,
+  PiggyBank,
   Settings,
   TrendingUp,
   Trophy,
@@ -25,23 +28,31 @@ import Academy from "./pages/Academy";
 import AiTutor from "./pages/AiTutor";
 import Alerts from "./pages/Alerts";
 import Charts from "./pages/Charts";
+import CoinComparePage from "./pages/CoinComparePage";
 import Dashboard from "./pages/Dashboard";
 import Gamification from "./pages/Gamification";
+import NewsPage from "./pages/NewsPage";
 import Portfolio from "./pages/Portfolio";
 import SettingsPage from "./pages/SettingsPage";
 import Trade from "./pages/Trade";
+import WalletPage from "./pages/WalletPage";
 
 const NAV_ITEMS: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "trade", label: "Trade", icon: TrendingUp },
   { id: "portfolio", label: "Portfolio", icon: Wallet },
+  { id: "wallet", label: "Wallet", icon: PiggyBank },
   { id: "charts", label: "Charts", icon: BarChart3 },
   { id: "alerts", label: "Alerts", icon: Bell },
   { id: "gamification", label: "Gamify", icon: Trophy },
   { id: "academy", label: "Academy", icon: BookOpen },
   { id: "aiTutor", label: "AI Tutor", icon: Bot },
+  { id: "news", label: "News", icon: Newspaper },
+  { id: "coinCompare", label: "Compare", icon: GitCompare },
   { id: "settings", label: "Settings", icon: Settings },
 ];
+
+const BOTTOM_NAV: Page[] = ["dashboard", "trade", "wallet", "aiTutor", "news"];
 
 export default function MainLayout() {
   const [activePage, setActivePage] = useState<Page>("dashboard");
@@ -51,22 +62,34 @@ export default function MainLayout() {
   const { checkAlerts } = useAlerts();
   const { data: userData } = useUserData();
 
-  // Check alerts whenever prices update
   useEffect(() => {
     checkAlerts(prices);
   }, [prices, checkAlerts]);
 
-  const ActivePage = {
+  const PageComponents: Record<
+    Page,
+    React.ComponentType<{
+      prices: Record<string, ReturnType<typeof usePrices>["prices"][string]>;
+      priceList: ReturnType<typeof usePrices>["priceList"];
+      userData?: typeof userData;
+      onNavigate: (page: Page) => void;
+    }>
+  > = {
     dashboard: Dashboard,
     trade: Trade,
     portfolio: Portfolio,
+    wallet: WalletPage,
     charts: Charts,
     alerts: Alerts,
     gamification: Gamification,
     academy: Academy,
     aiTutor: AiTutor,
+    news: NewsPage,
+    coinCompare: CoinComparePage,
     settings: SettingsPage,
-  }[activePage];
+  };
+
+  const ActivePage = PageComponents[activePage];
 
   return (
     <div className="flex min-h-screen">
@@ -91,17 +114,17 @@ export default function MainLayout() {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = activePage === item.id;
+        <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
+          {NAV_ITEMS.map((navItem) => {
+            const Icon = navItem.icon;
+            const isActive = activePage === navItem.id;
             return (
               <button
                 type="button"
-                key={item.id}
-                onClick={() => setActivePage(item.id)}
+                key={navItem.id}
+                onClick={() => setActivePage(navItem.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                  "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                   isActive
                     ? "nav-active text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -109,11 +132,11 @@ export default function MainLayout() {
               >
                 <Icon
                   className={cn(
-                    "w-5 h-5 flex-shrink-0",
+                    "w-4 h-4 flex-shrink-0",
                     isActive && "text-primary",
                   )}
                 />
-                <span>{item.label}</span>
+                <span>{navItem.label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="activeIndicator"
@@ -216,16 +239,16 @@ export default function MainLayout() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <nav className="p-4 space-y-1">
-                {NAV_ITEMS.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activePage === item.id;
+              <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-80px)]">
+                {NAV_ITEMS.map((navItem) => {
+                  const Icon = navItem.icon;
+                  const isActive = activePage === navItem.id;
                   return (
                     <button
                       type="button"
-                      key={item.id}
+                      key={navItem.id}
                       onClick={() => {
-                        setActivePage(item.id);
+                        setActivePage(navItem.id);
                         setSidebarOpen(false);
                       }}
                       className={cn(
@@ -236,7 +259,7 @@ export default function MainLayout() {
                       )}
                     >
                       <Icon className="w-5 h-5" />
-                      {item.label}
+                      {navItem.label}
                     </button>
                   );
                 })}
@@ -249,24 +272,23 @@ export default function MainLayout() {
       {/* Mobile Bottom Nav */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 glass-card rounded-none border-t border-[oklch(0.85_0.18_195_/_0.2)] border-b-0 border-l-0 border-r-0">
         <div className="flex items-center justify-around py-2 px-2">
-          {[
-            ...NAV_ITEMS.slice(0, 4),
-            NAV_ITEMS.find((n) => n.id === "aiTutor")!,
-          ].map((item) => {
-            const Icon = item.icon;
-            const isActive = activePage === item.id;
+          {BOTTOM_NAV.map((pageId) => {
+            const navItem = NAV_ITEMS.find((n) => n.id === pageId);
+            if (!navItem) return null;
+            const Icon = navItem.icon;
+            const isActive = activePage === pageId;
             return (
               <button
                 type="button"
-                key={item.id}
-                onClick={() => setActivePage(item.id)}
+                key={pageId}
+                onClick={() => setActivePage(pageId)}
                 className={cn(
                   "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-all",
                   isActive ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <Icon className="w-5 h-5" />
-                <span className="text-[10px]">{item.label}</span>
+                <span className="text-[10px]">{navItem.label}</span>
               </button>
             );
           })}
