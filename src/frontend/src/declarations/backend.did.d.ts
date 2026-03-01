@@ -30,9 +30,16 @@ export interface Trade {
 }
 export type TradeSide = { 'buy' : null } |
   { 'sell' : null };
+export interface TutorLesson {
+  'id' : string,
+  'question' : string,
+  'tips' : Array<string>,
+  'answer' : string,
+  'category' : string,
+}
 export interface UserDataView {
   'xp' : bigint,
-  'portfolio' : { 'coin' : string, 'quantity' : number },
+  'portfolio' : Array<{ 'coin' : string, 'quantity' : number }>,
   'balance' : number,
   'tradeHistory' : Array<Trade>,
   'badges' : Array<Badge>,
@@ -43,6 +50,7 @@ export interface _SERVICE {
   'getLeaderboard' : ActorMethod<[], Array<[Principal, UserDataView]>>,
   'getMarketMode' : ActorMethod<[], MarketMode>,
   'getOrCreateUserData' : ActorMethod<[], UserDataView>,
+  'getTutorLessons' : ActorMethod<[], Array<TutorLesson>>,
   'sell' : ActorMethod<[string, number], undefined>,
   'setMarketMode' : ActorMethod<[MarketMode], undefined>,
 }

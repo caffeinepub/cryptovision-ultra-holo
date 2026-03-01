@@ -3,6 +3,7 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Bot,
   LayoutDashboard,
   Menu,
   Settings,
@@ -21,6 +22,7 @@ import { useUserData } from "../hooks/useQueries";
 
 import type { Page } from "../types/navigation";
 import Academy from "./pages/Academy";
+import AiTutor from "./pages/AiTutor";
 import Alerts from "./pages/Alerts";
 import Charts from "./pages/Charts";
 import Dashboard from "./pages/Dashboard";
@@ -37,6 +39,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "alerts", label: "Alerts", icon: Bell },
   { id: "gamification", label: "Gamify", icon: Trophy },
   { id: "academy", label: "Academy", icon: BookOpen },
+  { id: "aiTutor", label: "AI Tutor", icon: Bot },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -61,6 +64,7 @@ export default function MainLayout() {
     alerts: Alerts,
     gamification: Gamification,
     academy: Academy,
+    aiTutor: AiTutor,
     settings: SettingsPage,
   }[activePage];
 
@@ -245,7 +249,10 @@ export default function MainLayout() {
       {/* Mobile Bottom Nav */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 glass-card rounded-none border-t border-[oklch(0.85_0.18_195_/_0.2)] border-b-0 border-l-0 border-r-0">
         <div className="flex items-center justify-around py-2 px-2">
-          {NAV_ITEMS.slice(0, 5).map((item) => {
+          {[
+            ...NAV_ITEMS.slice(0, 4),
+            NAV_ITEMS.find((n) => n.id === "aiTutor")!,
+          ].map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
             return (

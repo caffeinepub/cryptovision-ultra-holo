@@ -6,6 +6,7 @@ export type Page =
   | "alerts"
   | "gamification"
   | "academy"
+  | "aiTutor"
   | "settings";
 
 export interface PageProps {

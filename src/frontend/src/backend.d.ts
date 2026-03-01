@@ -7,12 +7,19 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export type Time = bigint;
+export interface TutorLesson {
+    id: string;
+    question: string;
+    tips: Array<string>;
+    answer: string;
+    category: string;
+}
 export interface EducationArticle {
     title: string;
     content: string;
     summary: string;
 }
+export type Time = bigint;
 export interface Trade {
     totalValue: number;
     coin: string;
@@ -23,10 +30,10 @@ export interface Trade {
 }
 export interface UserDataView {
     xp: bigint;
-    portfolio: {
+    portfolio: Array<{
         coin: string;
         quantity: number;
-    };
+    }>;
     balance: number;
     tradeHistory: Array<Trade>;
     badges: Array<Badge>;
@@ -50,6 +57,7 @@ export interface backendInterface {
     getLeaderboard(): Promise<Array<[Principal, UserDataView]>>;
     getMarketMode(): Promise<MarketMode>;
     getOrCreateUserData(): Promise<UserDataView>;
+    getTutorLessons(): Promise<Array<TutorLesson>>;
     sell(coin: string, quantity: number): Promise<void>;
     setMarketMode(mode: MarketMode): Promise<void>;
 }

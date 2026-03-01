@@ -29,7 +29,9 @@ export const Badge = IDL.Record({
 });
 export const UserDataView = IDL.Record({
   'xp' : IDL.Nat,
-  'portfolio' : IDL.Record({ 'coin' : IDL.Text, 'quantity' : IDL.Float64 }),
+  'portfolio' : IDL.Vec(
+    IDL.Record({ 'coin' : IDL.Text, 'quantity' : IDL.Float64 })
+  ),
   'balance' : IDL.Float64,
   'tradeHistory' : IDL.Vec(Trade),
   'badges' : IDL.Vec(Badge),
@@ -38,6 +40,13 @@ export const MarketMode = IDL.Variant({
   'normal' : IDL.Null,
   'bear' : IDL.Null,
   'bull' : IDL.Null,
+});
+export const TutorLesson = IDL.Record({
+  'id' : IDL.Text,
+  'question' : IDL.Text,
+  'tips' : IDL.Vec(IDL.Text),
+  'answer' : IDL.Text,
+  'category' : IDL.Text,
 });
 
 export const idlService = IDL.Service({
@@ -50,6 +59,7 @@ export const idlService = IDL.Service({
     ),
   'getMarketMode' : IDL.Func([], [MarketMode], ['query']),
   'getOrCreateUserData' : IDL.Func([], [UserDataView], []),
+  'getTutorLessons' : IDL.Func([], [IDL.Vec(TutorLesson)], ['query']),
   'sell' : IDL.Func([IDL.Text, IDL.Float64], [], []),
   'setMarketMode' : IDL.Func([MarketMode], [], []),
 });
@@ -75,7 +85,9 @@ export const idlFactory = ({ IDL }) => {
   const Badge = IDL.Record({ 'name' : IDL.Text, 'description' : IDL.Text });
   const UserDataView = IDL.Record({
     'xp' : IDL.Nat,
-    'portfolio' : IDL.Record({ 'coin' : IDL.Text, 'quantity' : IDL.Float64 }),
+    'portfolio' : IDL.Vec(
+      IDL.Record({ 'coin' : IDL.Text, 'quantity' : IDL.Float64 })
+    ),
     'balance' : IDL.Float64,
     'tradeHistory' : IDL.Vec(Trade),
     'badges' : IDL.Vec(Badge),
@@ -84,6 +96,13 @@ export const idlFactory = ({ IDL }) => {
     'normal' : IDL.Null,
     'bear' : IDL.Null,
     'bull' : IDL.Null,
+  });
+  const TutorLesson = IDL.Record({
+    'id' : IDL.Text,
+    'question' : IDL.Text,
+    'tips' : IDL.Vec(IDL.Text),
+    'answer' : IDL.Text,
+    'category' : IDL.Text,
   });
   
   return IDL.Service({
@@ -96,6 +115,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getMarketMode' : IDL.Func([], [MarketMode], ['query']),
     'getOrCreateUserData' : IDL.Func([], [UserDataView], []),
+    'getTutorLessons' : IDL.Func([], [IDL.Vec(TutorLesson)], ['query']),
     'sell' : IDL.Func([IDL.Text, IDL.Float64], [], []),
     'setMarketMode' : IDL.Func([MarketMode], [], []),
   });

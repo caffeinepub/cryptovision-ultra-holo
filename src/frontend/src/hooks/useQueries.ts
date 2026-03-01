@@ -1,19 +1,25 @@
 import type { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MarketMode } from "../backend.d";
-import type { EducationArticle, UserDataView } from "../backend.d";
+import type { EducationArticle, TutorLesson, UserDataView } from "../backend.d";
 import { useActor } from "./useActor";
+import { useOfflineCache } from "./useOfflineCache";
 
 export function useUserData() {
   const { actor, isFetching } = useActor();
+  const { cachedData, saveToCache } = useOfflineCache();
+
   return useQuery<UserDataView>({
     queryKey: ["userData"],
     queryFn: async () => {
       if (!actor) throw new Error("No actor");
-      return actor.getOrCreateUserData();
+      const data = await actor.getOrCreateUserData();
+      saveToCache(data);
+      return data;
     },
     enabled: !!actor && !isFetching,
     staleTime: 10_000,
+    initialData: cachedData(),
   });
 }
 
@@ -56,9 +62,23 @@ export function useMarketMode() {
   });
 }
 
+export function useTutorLessons() {
+  const { actor, isFetching } = useActor();
+  return useQuery<TutorLesson[]>({
+    queryKey: ["tutorLessons"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getTutorLessons();
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 300_000,
+  });
+}
+
 export function useBuy() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+  const { saveToCache } = useOfflineCache();
   return useMutation({
     mutationFn: async ({
       coin,
@@ -69,6 +89,11 @@ export function useBuy() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userData"] });
+      // Save updated data to cache after invalidation settles
+      setTimeout(() => {
+        const data = queryClient.getQueryData<UserDataView>(["userData"]);
+        if (data) saveToCache(data);
+      }, 500);
     },
   });
 }
@@ -76,6 +101,7 @@ export function useBuy() {
 export function useSell() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+  const { saveToCache } = useOfflineCache();
   return useMutation({
     mutationFn: async ({
       coin,
@@ -86,6 +112,10 @@ export function useSell() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userData"] });
+      setTimeout(() => {
+        const data = queryClient.getQueryData<UserDataView>(["userData"]);
+        if (data) saveToCache(data);
+      }, 500);
     },
   });
 }

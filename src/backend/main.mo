@@ -6,9 +6,11 @@ import Time "mo:core/Time";
 import Order "mo:core/Order";
 import List "mo:core/List";
 import Float "mo:core/Float";
-import Runtime "mo:core/Runtime";
+import Migration "migration";
 import Principal "mo:core/Principal";
+import Runtime "mo:core/Runtime";
 
+(with migration = Migration.run)
 actor {
   module Coin {
     public func compare(a : Coin, b : Coin) : Order.Order {
@@ -61,7 +63,7 @@ actor {
   };
 
   type UserDataView = {
-    portfolio : { coin : Text; quantity : Float };
+    portfolio : [{ coin : Text; quantity : Float }];
     balance : Float;
     tradeHistory : [Trade];
     xp : Nat;
@@ -88,6 +90,14 @@ actor {
   type PriceDirection = {
     #above;
     #below;
+  };
+
+  type TutorLesson = {
+    id : Text;
+    category : Text;
+    question : Text;
+    answer : Text;
+    tips : [Text];
   };
 
   module Badge {
@@ -153,17 +163,172 @@ actor {
     },
   ];
 
+  let tutorLessons : [TutorLesson] = [
+    {
+      id = "lesson1";
+      category = "Crypto Basics";
+      question = "What is a cryptocurrency?";
+      answer = "A cryptocurrency is a digital or virtual currency that uses cryptography for security.";
+      tips = [
+        "Bitcoin was the first cryptocurrency",
+        "Crypto is decentralized and not controlled by any government",
+      ];
+    },
+    {
+      id = "lesson2";
+      category = "Trading";
+      question = "How does trading work in this simulator?";
+      answer = "You buy and sell virtual coins using simulated USD balance based on real-world prices.";
+      tips = [
+        "Prices are updated daily",
+        "You start with $10,000 virtual balance",
+      ];
+    },
+    {
+      id = "lesson3";
+      category = "P&L";
+      question = "What does P&L mean?";
+      answer = "P&L stands for Profit and Loss. It reflects your trading performance over time.";
+      tips = [
+        "Positive P&L means you made a profit",
+        "Negative P&L means you lost money",
+      ];
+    },
+    {
+      id = "lesson4";
+      category = "Risk Management";
+      question = "Why is risk management important?";
+      answer = "Risk management helps protect your portfolio from big losses due to market volatility.";
+      tips = [
+        "Never invest more than you can afford to lose",
+        "Diversify your holdings across multiple coins",
+      ];
+    },
+    {
+      id = "lesson5";
+      category = "Charts";
+      question = "How do I read candlestick charts and RSI?";
+      answer = "Candlesticks show price movement. RSI helps identify overbought or oversold conditions.";
+      tips = [
+        "Long candles mean bigger price swings",
+        "RSI above 70 = overbought, below 30 = oversold",
+      ];
+    },
+    {
+      id = "lesson6";
+      category = "Market Trends";
+      question = "What are bull and bear markets?";
+      answer = "Bull market = rising prices. Bear market = falling prices.";
+      tips = [
+        "Bull markets offer more trading opportunities",
+        "Bear markets require careful risk management",
+      ];
+    },
+    {
+      id = "lesson7";
+      category = "Diversification";
+      question = "Why should I diversify my portfolio?";
+      answer = "Diversification reduces risk by spreading your investments across multiple assets.";
+      tips = [
+        "Avoid putting all your funds into one coin",
+        "Stablecoins can provide stability",
+      ];
+    },
+    {
+      id = "lesson8";
+      category = "Market Cap";
+      question = "What is market capitalization?";
+      answer = "Market cap is the total value of all coins in circulation for a given cryptocurrency.";
+      tips = [
+        "Large-cap coins are generally more stable",
+        "Small-cap coins are riskier but can offer higher returns",
+      ];
+    },
+    {
+      id = "lesson9";
+      category = "Blockchain";
+      question = "How does blockchain technology work?";
+      answer = "Blockchain is a decentralized, distributed ledger that records transactions securely.";
+      tips = [
+        "Bitcoin uses blockchain for transaction history",
+        "Ethereum uses blockchain for smart contracts",
+      ];
+    },
+    {
+      id = "lesson10";
+      category = "DeFi";
+      question = "What is Decentralized Finance (DeFi)?";
+      answer = "DeFi apps provide financial services using blockchain technology without intermediaries.";
+      tips = [
+        "Decentralized exchanges allow peer-to-peer trading",
+        "Defi aims to make finance accessible to everyone",
+      ];
+    },
+    {
+      id = "lesson11";
+      category = "Scams";
+      question = "How can I avoid crypto scams?";
+      answer = "Be wary of promises of guaranteed returns and never share your wallet files or keys.";
+      tips = [
+        "Avoid suspicious links and phishing attempts",
+        "Use reputable exchanges and wallets",
+      ];
+    },
+    {
+      id = "lesson12";
+      category = "Long vs Short Term";
+      question = "Should I focus on long-term or short-term strategies?";
+      answer = "Long-term strategies are more stable, while short-term trading can be riskier but potentially more profitable.";
+      tips = [
+        "Consider your risk tolerance and goals",
+        "Diversify between long- and short-term positions",
+      ];
+    },
+    {
+      id = "lesson13";
+      category = "XP and Badges";
+      question = "How do XP and badges work in this app?";
+      answer = "XP reflects your activity and achievements. Badges reward you for completing milestones.";
+      tips = [
+        "Complete tutorials to earn XP and badges",
+        "XP helps track your progress over time",
+      ];
+    },
+    {
+      id = "lesson14";
+      category = "Price Alerts";
+      question = "How do price alerts work?";
+      answer = "Price alerts notify you when a coin reaches your target price.";
+      tips = [
+        "Set alerts for both buy and sell opportunities",
+        "Use alerts to stay informed about market movements",
+      ];
+    },
+    {
+      id = "lesson15";
+      category = "Trading Psychology";
+      question = "Why is trading psychology important?";
+      answer = "Trading discipline and emotional control are key to long-term success.";
+      tips = [
+        "Avoid making impulsive trades",
+        "Maintain a long-term perspective",
+      ];
+    },
+  ];
+
   func toUserDataView(userData : UserData) : UserDataView {
-    let portfolioArray = userData.portfolio.toArray();
+    let portfolioEntries = userData.portfolio.toArray();
+    let portfolioArray = portfolioEntries.map(
+      func((coin, quantity)) {
+        { coin; quantity };
+      }
+    );
+
     let tradeHistoryArray = userData.tradeHistory.toArray();
     let badgesArray = userData.badges.toArray();
+
     {
-      portfolio = if (portfolioArray.size() > 0) {
-        let firstEntry = portfolioArray[0];
-        { coin = firstEntry.0; quantity = firstEntry.1 };
-      } else {
-        { coin = ""; quantity = 0.0 };
-      };
+      portfolio = portfolioArray;
       balance = userData.balance;
       tradeHistory = tradeHistoryArray;
       xp = userData.xp;
@@ -321,5 +486,9 @@ actor {
 
   public query ({ caller }) func getMarketMode() : async MarketMode {
     marketMode;
+  };
+
+  public query ({ caller }) func getTutorLessons() : async [TutorLesson] {
+    tutorLessons;
   };
 };

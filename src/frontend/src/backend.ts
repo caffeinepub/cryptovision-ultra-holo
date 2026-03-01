@@ -89,12 +89,19 @@ export class ExternalBlob {
         return this;
     }
 }
-export type Time = bigint;
+export interface TutorLesson {
+    id: string;
+    question: string;
+    tips: Array<string>;
+    answer: string;
+    category: string;
+}
 export interface EducationArticle {
     title: string;
     content: string;
     summary: string;
 }
+export type Time = bigint;
 export interface Trade {
     totalValue: number;
     coin: string;
@@ -105,10 +112,10 @@ export interface Trade {
 }
 export interface UserDataView {
     xp: bigint;
-    portfolio: {
+    portfolio: Array<{
         coin: string;
         quantity: number;
-    };
+    }>;
     balance: number;
     tradeHistory: Array<Trade>;
     badges: Array<Badge>;
@@ -132,6 +139,7 @@ export interface backendInterface {
     getLeaderboard(): Promise<Array<[Principal, UserDataView]>>;
     getMarketMode(): Promise<MarketMode>;
     getOrCreateUserData(): Promise<UserDataView>;
+    getTutorLessons(): Promise<Array<TutorLesson>>;
     sell(coin: string, quantity: number): Promise<void>;
     setMarketMode(mode: MarketMode): Promise<void>;
 }
@@ -208,6 +216,20 @@ export class Backend implements backendInterface {
             return from_candid_UserDataView_n3(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getTutorLessons(): Promise<Array<TutorLesson>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTutorLessons();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTutorLessons();
+            return result;
+        }
+    }
     async sell(arg0: string, arg1: number): Promise<void> {
         if (this.processError) {
             try {
@@ -251,19 +273,19 @@ function from_candid_UserDataView_n3(_uploadFile: (file: ExternalBlob) => Promis
 }
 function from_candid_record_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     xp: bigint;
-    portfolio: {
+    portfolio: Array<{
         coin: string;
         quantity: number;
-    };
+    }>;
     balance: number;
     tradeHistory: Array<_Trade>;
     badges: Array<_Badge>;
 }): {
     xp: bigint;
-    portfolio: {
+    portfolio: Array<{
         coin: string;
         quantity: number;
-    };
+    }>;
     balance: number;
     tradeHistory: Array<Trade>;
     badges: Array<Badge>;
